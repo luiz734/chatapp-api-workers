@@ -3,16 +3,14 @@ package main
 import (
 	"bytes"
 	"fmt"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"golang.org/x/image/draw"
 	"image"
 	"image/jpeg"
 	"image/png"
 	"io"
 	"log"
-	"math/rand/v2"
 	"os"
-	"strconv"
-	amqp "github.com/rabbitmq/amqp091-go"
-	"golang.org/x/image/draw"
 )
 
 func failOnError(err error, msg string) {
@@ -55,13 +53,13 @@ func main() {
 
 	go func() {
 		for d := range msgs {
-			filename := d.Headers["filename"]
+			filename := d.Headers["filename"].(string)
 			id := d.Headers["id"]
-            _=id
+			_ = id
 			// fmt.Println("Received file:", filename, "ID:", id)
 			fmt.Println("Received file")
 
-			outBytes := processImage(d.Body)
+			outName := processImage(d.Body, filename)
 
 			log.Printf("Compressed and resized %s", filename)
 
@@ -73,7 +71,7 @@ func main() {
 				false,     // immediate
 				amqp.Publishing{
 					ContentType:   "text/plain",
-					Body:          outBytes,
+					Body:          []byte(outName),
 					CorrelationId: d.CorrelationId,
 				})
 			failOnError(err, "Failed to publish a message")
@@ -87,7 +85,7 @@ func main() {
 	<-forever
 }
 
-func processImage(imageData []byte) []byte {
+func processImage(imageData []byte, filename string) string {
 
 	// Create a bytes reader.
 	reader := bytes.NewReader(imageData)
@@ -95,7 +93,8 @@ func processImage(imageData []byte) []byte {
 	// Decode the image.
 	img, format, err := image.Decode(reader)
 	if err != nil {
-		log.Fatalf("Failed to decode image: %v", err)
+		log.Printf("Failed to encode and save image: %v", err)
+        return ""
 	}
 
 	// Get the original dimensions.
@@ -125,8 +124,8 @@ func processImage(imageData []byte) []byte {
 
 	switch format {
 	case "jpeg":
-		s := strconv.Itoa(rand.Int())
-		outFileName = fmt.Sprintf("output_compressed_resized-%S.jpg", s)
+		// s := strconv.Itoa(rand.Int())
+		outFileName = fmt.Sprintf("../chatapp-api/images/%s.jpg", filename)
 		outFile, err = os.Create(outFileName)
 		if err != nil {
 			log.Fatalf("Failed to create file: %v", err)
@@ -137,7 +136,8 @@ func processImage(imageData []byte) []byte {
 		encoderError = jpeg.Encode(outFile, resizedImg, &jpegOptions)
 
 	case "png":
-		outFileName = "output_compressed_resized.png"
+		// s := strconv.Itoa(rand.Int())
+		outFileName = fmt.Sprintf("../chatapp-api/images/%s.png", filename)
 		outFile, err = os.Create(outFileName)
 		if err != nil {
 			log.Fatalf("Failed to create file: %v", err)
@@ -152,15 +152,17 @@ func processImage(imageData []byte) []byte {
 	}
 
 	if encoderError != nil {
-		log.Fatalf("Failed to encode and save image: %v", encoderError)
+		log.Printf("Failed to encode and save image: %v", encoderError)
+        outFileName = ""
 	}
 
-	outBytes, err := fileToByteArray(outFile)
-	if err != nil {
-		panic(err)
-	}
+	return outFileName
 
-	return outBytes
+	// outBytes, err := fileToByteArray(outFile)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
 }
 
 func fileToByteArray(file *os.File) ([]byte, error) {
