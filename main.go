@@ -57,7 +57,9 @@ func main() {
 		for d := range msgs {
 			filename := d.Headers["filename"]
 			id := d.Headers["id"]
-			fmt.Println("Received file:", filename, "ID:", id)
+            _=id
+			// fmt.Println("Received file:", filename, "ID:", id)
+			fmt.Println("Received file")
 
 			outBytes := processImage(d.Body)
 
@@ -103,7 +105,7 @@ func processImage(imageData []byte) []byte {
 
 	// Calculate new dimensions while maintaining aspect ratio.
 	var newWidth, newHeight int
-	maxSize := 800
+	maxSize := 200
 	if originalWidth > originalHeight {
 		newWidth = maxSize
 		newHeight = (originalHeight * maxSize) / originalWidth
