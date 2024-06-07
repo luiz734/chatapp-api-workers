@@ -4,9 +4,10 @@ FROM python:3.12.3-slim
 # RUN apt install git-all
 RUN apt update
 RUN apt install -y git libgl1 libglib2.0-0 libsm6 libxrender1 libxext6
-RUN git clone https://github.com/luiz734/chatapp-api-workers
+# RUN git clone https://github.com/luiz734/chatapp-api-workers
 
 WORKDIR chatapp-api-workers
+COPY . .
 RUN python -m ensurepip --upgrade
 RUN python -m pip install --upgrade setuptools
 # RUN pip install --upgrade virtualenv

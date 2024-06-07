@@ -55,7 +55,7 @@ def callback(ch, method, properties, body):
 
 
 def main():
-    connection_params = pika.ConnectionParameters("localhost")
+    connection_params = pika.ConnectionParameters("rabbitmq")
     connection = pika.BlockingConnection(connection_params)
     channel = connection.channel()
 
